@@ -17,8 +17,11 @@ The API creates its indexes at startup. `GET /health` checks MongoDB availabilit
 included. The implementation covers the contracted employee and attendance operations, corrections and audit history,
 analytics aggregations, and query explain endpoint.
 
-The attendance dashboard is available at `http://localhost:8000/` after starting the API. It provides team attendance,
-department analytics, and late-arrival rankings. Sign in as admin to use punch-in/out or correct records; employee
+The responsive attendance dashboard is available at `http://localhost:8000/` after starting the API. It provides a
+today-at-a-glance breakdown, team attendance, department analytics, and late-arrival rankings with total time late.
+Unrecorded attendance is shown separately from employees explicitly marked absent. Export any selected month's attendance
+records to CSV, including local IST punch times and calculated durations; the export retrieves all pages for the month.
+Sign in as admin to use punch-in/out, correct records, and mark an employee on leave for a selected date. Employee
 creation and employee removal are also available to admins. Removed employees are archived from the active roster while
 their attendance records and correction history remain available. Shift schedules are shown on the roster and punch
 selector. Corrections are written to the audit history. Write endpoints return `401` when not signed in. Admin sessions

@@ -37,10 +37,10 @@ info:
     | `WFH` | Worked from home | `punch_in` required | yes | punch-in |
     | `ON_DUTY` | Official duty away from the office | `punch_in` required | yes | punch-in |
     | `ABSENT` | Did not work, no approved leave | both null | no | seeded data, or a correction |
-    | `LEAVE` | On approved leave | both null | no | seeded data, or a correction |
+    | `LEAVE` | On approved leave | both null | no | seeded data, a correction, or the admin leave action |
 
-    No endpoint creates `ABSENT` or `LEAVE` records. A weekday with **no record at all** is different from an `ABSENT`
-    record.
+    No endpoint creates `ABSENT` records. The admin-only `POST /attendance/leave` extension creates a `LEAVE` record.
+    A weekday with **no record at all** is different from an `ABSENT` record.
 
     ## Who computes what
     | Field | Computed when | From |
@@ -198,6 +198,30 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/AttendanceRecord'}
+        '404': {$ref: '#/components/responses/Error'}
+        '409': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /attendance/leave:
+    post:
+      tags: [attendance, admin]
+      operationId: markAttendanceLeave
+      summary: Mark an employee on leave for one date
+      description: |
+        Admin-only dashboard extension. Creates a `LEAVE` attendance record with null punch times and zero derived
+        values. The employee must be active and the date must not precede `joined_on`. A record already present for the
+        employee and date returns 409; use the regularization endpoint to change an existing record to `LEAVE`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LeaveCreate'}
+      responses:
+        '201':
+          description: Leave record created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AttendanceRecord'}
+        '401': {$ref: '#/components/responses/Error'}
         '404': {$ref: '#/components/responses/Error'}
         '409': {$ref: '#/components/responses/Error'}
         '422': {$ref: '#/components/responses/ValidationError'}
@@ -527,6 +551,12 @@ components:
           allOf:
             - {$ref: '#/components/schemas/EpochMillis'}
           description: Epoch milliseconds. Defaults to now.
+    LeaveCreate:
+      type: object
+      required: [emp_code, date]
+      properties:
+        emp_code: {type: string, pattern: '^EMP\d{4,6}$'}
+        date: {type: string, format: date, description: "IST calendar date for the leave record."}
     RegularizeRequest:
       type: object
       required: [reason, regularized_by]

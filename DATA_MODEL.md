@@ -82,10 +82,10 @@ At most **one document per (`emp_code`, `date`)**. `emp_code` points at `employe
 | `WFH` | Worked from home | `punch_in` required | yes | Punch-in |
 | `ON_DUTY` | Official duty away from the office | `punch_in` required | yes | Punch-in |
 | `ABSENT` | Did not work, not on approved leave | both null | no | Seeded back-office data, or a correction |
-| `LEAVE` | On approved leave | both null | no | Seeded back-office data, or a correction |
+| `LEAVE` | On approved leave | both null | no | Seeded data, a correction, or the admin dashboard |
 
-No endpoint creates `ABSENT` or `LEAVE` records. A weekday with **no document at all** is different from an `ABSENT`
-document; the day has simply not been recorded.
+The dashboard's admin-only `POST /attendance/leave` extension creates `LEAVE` records. No endpoint creates `ABSENT`
+records. A weekday with **no document at all** is different from an `ABSENT` document; the day has simply not been recorded.
 
 ### Stored derived values are authoritative
 
