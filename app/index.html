@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12313b">
+  <title>PeoplePulse · Attendance</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18323a;
+      --muted: #71858a;
+      --line: #dce8e8;
+      --surface: #fff;
+      --canvas: #f1f7f6;
+      --navy: #12313b;
+      --blue: #187c87;
+      --blue-soft: #e5f4f4;
+      --green: #167861;
+      --green-soft: #e5f4ed;
+      --amber: #b36c18;
+      --amber-soft: #fff2df;
+      --red: #c34865;
+      --red-soft: #fff0f3;
+      --violet: #397785;
+      --violet-soft: #e8f3f5;
+      --teal: #168899;
+      --teal-soft: #e4f4f6;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(ellipse at 95% 0%, #d8eeeb 0, transparent 32%), var(--canvas); color: var(--ink); font-size: 14px; }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .layout { min-height: 100vh; }
+    .sidebar {
+      background: linear-gradient(180deg, #173c47 0%, #102c37 100%); color: #d7e7e8; display: flex; flex-direction: column;
+      left: 0; padding: 25px 16px; position: fixed; top: 0; bottom: 0; width: 228px;
+    }
+    .brand { align-items: center; color: white; display: flex; font-size: 17px; font-weight: 750; gap: 10px; padding: 0 10px 34px; }
+    .brand-mark { align-items: center; background: linear-gradient(145deg, #4dc2b2, #19828e); border-radius: 10px; box-shadow: 0 5px 14px #167d8050; display: flex; height: 31px; justify-content: center; width: 31px; }
+    .brand-mark svg { width: 19px; }
+    .nav-label { color: #8491a7; font-size: 10px; font-weight: 700; letter-spacing: .13em; padding: 0 12px 10px; text-transform: uppercase; }
+    .nav { display: grid; gap: 5px; }
+    .nav a { align-items: center; border-radius: 9px; color: #b9c4d5; display: flex; gap: 12px; padding: 11px 12px; text-decoration: none; transition: .15s; }
+    .nav a.active, .nav a:hover { background: linear-gradient(100deg, #286873, #245361); color: white; }
+    .nav svg { height: 17px; opacity: .9; width: 17px; }
+    .sidebar-bottom { border-top: 1px solid #31545d; margin-top: auto; padding: 16px 8px 0; }
+    .api-status { align-items: center; color: #aab8cb; display: flex; font-size: 12px; gap: 9px; }
+    .dot { background: #38c99a; border-radius: 50%; box-shadow: 0 0 0 4px #38c99a1c; height: 8px; width: 8px; }
+    main { margin-left: 228px; min-height: 100vh; padding: 29px clamp(20px, 4vw, 56px) 48px; }
+    .topbar { align-items: center; display: flex; justify-content: space-between; margin-bottom: 30px; }
+    .eyebrow { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+    h1 { font-size: 25px; letter-spacing: -.04em; margin: 0; }
+    .top-right { align-items: center; display: flex; gap: 12px; }
+    .date-chip, .avatar { align-items: center; background: white; border: 1px solid var(--line); border-radius: 10px; display: flex; gap: 9px; padding: 9px 12px; }
+    .date-chip { color: #566273; font-size: 12px; }
+    .admin-button { background: linear-gradient(135deg, #177d83, #146473); border: 0; border-radius: 9px; box-shadow: 0 4px 12px #167d802b; color: white; font-size: 11px; font-weight: 650; min-height: 36px; padding: 0 14px; }
+    .admin-button:hover { box-shadow: 0 6px 16px #167d8042; filter: brightness(1.05); }
+    .section-heading { align-items: end; display: flex; justify-content: space-between; margin: 27px 0 14px; }
+    .section-heading h2 { font-size: 16px; letter-spacing: -.02em; margin: 0; }
+    .section-heading p { color: var(--muted); font-size: 12px; margin: 5px 0 0; }
+    .month-input { background: white; border: 1px solid var(--line); border-radius: 8px; color: #4b5767; font-size: 12px; padding: 8px 10px; }
+    .stats { display: grid; gap: 15px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card { background: var(--surface); border: 1px solid #dfebea; border-radius: 15px; box-shadow: 0 5px 18px #163b400b; transition: box-shadow .18s, transform .18s; }
+    .card:hover { box-shadow: 0 9px 25px #163b4018; }
+    .stat { min-height: 128px; overflow: hidden; padding: 17px 18px; position: relative; }
+    .stat::after { background: var(--stat-color, #187c87); border-radius: 0 0 4px 4px; content: ""; height: 4px; left: 18px; opacity: .8; position: absolute; right: 18px; top: 0; }
+    .stat:nth-child(1) { --stat-color: #177d83; }
+    .stat:nth-child(2) { --stat-color: #36a78c; }
+    .stat:nth-child(3) { --stat-color: #e19a32; }
+    .stat:nth-child(4) { --stat-color: #538fa0; }
+    .stat-top { align-items: center; color: var(--muted); display: flex; font-size: 12px; justify-content: space-between; }
+    .stat-icon { align-items: center; background: var(--blue-soft); border-radius: 10px; color: var(--blue); display: flex; height: 34px; justify-content: center; width: 34px; }
+    .stat-icon.green { background: var(--green-soft); color: var(--green); }
+    .stat-icon.amber { background: var(--amber-soft); color: var(--amber); }
+    .stat-icon.purple { background: var(--violet-soft); color: var(--violet); }
+    .stat-icon svg { height: 16px; width: 16px; }
+    .stat-value { color: #173c43; font-size: 27px; font-weight: 750; letter-spacing: -.045em; margin-top: 12px; }
+    .stat-note { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .middle-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.65fr) minmax(290px, .95fr); }
+    .attendance-card, .punch-card, .analytics-card { padding: 19px; }
+    .card-title { align-items: center; display: flex; justify-content: space-between; }
+    .card-title h3 { font-size: 14px; letter-spacing: -.01em; margin: 0; }
+    .quiet { color: var(--muted); font-size: 11px; }
+    .filter-row { display: flex; gap: 8px; margin: 15px 0 13px; }
+    .search { background: #fbfbfe; border: 1px solid var(--line); border-radius: 9px; flex: 1; min-width: 80px; outline: none; padding: 8px 10px; }
+    .search:focus, .field input:focus, .field select:focus { border-color: #6eafb0; box-shadow: 0 0 0 3px #187c871a; outline: none; }
+    .select { background: #fbfbfe; border: 1px solid var(--line); border-radius: 9px; color: #4b5767; padding: 8px; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; min-width: 490px; text-align: left; width: 100%; }
+    th { background: #f0f7f6; border-bottom: 1px solid var(--line); color: #698287; font-size: 10px; font-weight: 700; letter-spacing: .055em; padding: 11px 8px; text-transform: uppercase; }
+    td { border-bottom: 1px solid #f0f2f5; color: #566273; font-size: 11px; padding: 12px 8px; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .person { align-items: center; display: flex; gap: 9px; }
+    .person-badge { align-items: center; background: #e1f2f0; border-radius: 50%; color: #197981; display: flex; flex: 0 0 29px; font-size: 9px; font-weight: 750; height: 29px; justify-content: center; }
+    #employee-rows tr:nth-child(6n+2) .person-badge, #leaderboard .leader-row:nth-child(6n+2) .person-badge { background: #e2f2e9; color: #287a5d; }
+    #employee-rows tr:nth-child(6n+3) .person-badge, #leaderboard .leader-row:nth-child(6n+3) .person-badge { background: #fff0df; color: #bd7621; }
+    #employee-rows tr:nth-child(6n+4) .person-badge, #leaderboard .leader-row:nth-child(6n+4) .person-badge { background: #e8f0f4; color: #527a91; }
+    #employee-rows tr:nth-child(6n+5) .person-badge, #leaderboard .leader-row:nth-child(6n+5) .person-badge { background: #e5f3fb; color: #347da5; }
+    #employee-rows tr:nth-child(6n) .person-badge, #leaderboard .leader-row:nth-child(6n) .person-badge { background: #fff0f3; color: #bd536c; }
+    .person-name { color: #203a42; font-size: 11px; font-weight: 650; }
+    .person-code { color: #97a0ad; font-size: 9px; margin-top: 2px; }
+    .badge { border-radius: 20px; display: inline-block; font-size: 9px; font-weight: 650; padding: 5px 8px; }
+    .badge.present { background: var(--green-soft); color: var(--green); }
+    .badge.wfh { background: var(--teal-soft); color: var(--teal); }
+    .badge.on_duty { background: var(--blue-soft); color: var(--blue); }
+    .badge.absent { background: var(--red-soft); color: var(--red); }
+    .badge.leave { background: var(--violet-soft); color: var(--violet); }
+    .badge.open { background: var(--amber-soft); color: var(--amber); }
+    .link-button { background: none; border: 0; color: var(--blue); font-size: 10px; padding: 4px; }
+    .empty { color: var(--muted); padding: 28px 10px; text-align: center; }
+    .punch-card { background: radial-gradient(ellipse at 100% 0%, #dff3ef 0, transparent 48%), linear-gradient(145deg, #fff, #f3f8f8); }
+    .punch-intro { color: var(--muted); font-size: 11px; line-height: 1.55; margin: 8px 0 15px; }
+    .field { display: grid; gap: 6px; margin: 12px 0; }
+    .field label { color: #657183; font-size: 10px; font-weight: 650; }
+    .field input, .field select { background: white; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); min-width: 0; padding: 9px 10px; }
+    .clock { color: #34435a; font-size: 33px; font-weight: 680; letter-spacing: -.05em; margin: 4px 0 2px; }
+    .clock-sub { color: var(--muted); font-size: 10px; margin-bottom: 15px; }
+    .button-row { display: flex; gap: 9px; }
+    .button { align-items: center; border: 0; border-radius: 8px; display: inline-flex; font-size: 11px; font-weight: 650; justify-content: center; min-height: 36px; padding: 0 13px; transition: .15s; }
+    .button-primary { background: linear-gradient(135deg, #16828a, #126778); box-shadow: 0 4px 11px #167d802b; color: white; flex: 1; }
+    .button-primary:hover { box-shadow: 0 6px 16px #167d8040; filter: brightness(1.04); }
+    .button-outline { background: white; border: 1px solid #dedfeb; color: #435066; flex: 1; }
+    .button-outline:hover { background: #f0f7f6; border-color: #c7dcda; }
+    .button:disabled { cursor: wait; opacity: .6; }
+    .analytics-grid { display: grid; gap: 16px; grid-template-columns: 1.3fr 1fr; margin-top: 16px; }
+    .analytics-card { min-height: 220px; }
+    .dept-list { display: grid; gap: 15px; margin-top: 18px; }
+    .dept-line { display: grid; gap: 7px; }
+    .dept-info { align-items: center; display: flex; font-size: 11px; justify-content: space-between; }
+    .dept-name { color: #455164; font-weight: 600; }
+    .dept-meta { color: var(--muted); font-size: 10px; }
+    .track { background: #eff2f7; border-radius: 10px; height: 7px; overflow: hidden; }
+    .bar { background: linear-gradient(90deg, #5278f0, #7e98f6); border-radius: inherit; height: 100%; }
+    .leader-row { align-items: center; border-bottom: 1px solid #f0f2f5; display: flex; gap: 10px; padding: 11px 0; }
+    .leader-row:last-child { border-bottom: 0; }
+    .leader-row:nth-child(1) .rank { background: #fff1d9; color: #b8751b; }
+    .leader-row:nth-child(2) .rank { background: #e7eff1; color: #527986; }
+    .leader-row:nth-child(3) .rank { background: #f8eae2; color: #a66a4a; }
+    .leader-row:nth-child(n+4) .rank { background: #edf4f3; color: #687f80; }
+    .rank { align-items: center; border-radius: 8px; display: flex; font-size: 10px; font-weight: 750; height: 28px; justify-content: center; width: 28px; }
+    .leader-details { flex: 1; }
+    .leader-total { color: var(--amber); font-size: 11px; font-weight: 700; }
+    .toast { background: #17243b; border-radius: 9px; bottom: 22px; box-shadow: 0 8px 28px #17243b30; color: white; left: 50%; max-width: calc(100vw - 30px); opacity: 0; padding: 11px 16px; pointer-events: none; position: fixed; transform: translate(-50%, 12px); transition: .2s; z-index: 9; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    dialog { border: 0; border-radius: 14px; box-shadow: 0 18px 70px #17243b38; max-width: 440px; padding: 22px; width: calc(100% - 30px); }
+    dialog::backdrop { background: #17243b70; }
+    .dialog-head { align-items: start; display: flex; justify-content: space-between; }
+    .dialog-head h3 { font-size: 16px; margin: 0; }
+    .close { background: transparent; border: 0; color: var(--muted); font-size: 20px; line-height: 1; }
+    .form-grid { display: grid; gap: 0 12px; grid-template-columns: 1fr 1fr; }
+    .dialog-actions { display: flex; gap: 9px; justify-content: end; margin-top: 18px; }
+    .mobile-brand { display: none; }
+    @media (max-width: 1080px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .middle-grid { grid-template-columns: 1fr; }
+      .punch-card { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+      .punch-card .card-title, .punch-intro { grid-column: 1 / -1; }
+      .analytics-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px) {
+      .sidebar { bottom: auto; height: 60px; padding: 0 14px; position: sticky; width: 100%; z-index: 5; }
+      .sidebar > .brand { display: none; }
+      .brand { padding: 0; }
+      .sidebar > .nav-label, .sidebar > .nav, .sidebar-bottom { display: none; }
+      .mobile-brand { align-items: center; display: flex; height: 60px; justify-content: space-between; }
+      .mobile-brand .brand { font-size: 15px; }
+      .mobile-brand .api-status { font-size: 10px; }
+      main { margin-left: 0; padding: 22px 15px 35px; }
+      .topbar { margin-bottom: 23px; }
+      .top-right .date-chip { display: none; }
+      h1 { font-size: 22px; }
+      .stats { gap: 10px; }
+      .stat { min-height: 115px; padding: 13px; }
+      .stat-value { font-size: 22px; }
+      .section-heading { align-items: start; gap: 10px; }
+      .punch-card { display: block; }
+      .analytics-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 380px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stat-top { align-items: start; }
+      .stat-icon { height: 27px; width: 27px; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="mobile-brand">
+        <div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12.5 9.5 17 19 7"/></svg></span>PeoplePulse</div>
+        <div class="api-status"><span class="dot"></span><span id="mobile-api-status">Checking API</span></div>
+      </div>
+      <div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12.5 9.5 17 19 7"/></svg></span>PeoplePulse</div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav">
+        <a class="active" href="#overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg>Overview</a>
+        <a href="#attendance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h3"/></svg>Attendance</a>
+        <a href="#analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5M4 19h17"/><path d="m7 15 4-4 3 2 6-7"/></svg>Analytics</a>
+        <a href="#employees"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.6V20"/></svg>Employees</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="api-status"><span class="dot" id="api-dot"></span><span id="api-status">Checking API connection</span></div></div>
+    </aside>
+    <main>
+      <header class="topbar" id="overview">
+        <div><div class="eyebrow" id="weekday-date"></div><h1>Attendance overview</h1></div>
+        <div class="top-right"><div class="date-chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span id="today-date"></span></div><button class="admin-button" id="admin-button" type="button">Admin sign in</button></div>
+      </header>
+      <div class="section-heading">
+        <div><h2>Your team at a glance</h2><p>Live attendance and workforce insights</p></div>
+        <input class="month-input" id="month-picker" type="month" aria-label="Select analytics month">
+      </div>
+      <section class="stats" aria-label="Attendance metrics">
+        <article class="card stat"><div class="stat-top"><span>Team members</span><span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.6V20"/></svg></span></div><div class="stat-value" id="team-count">—</div><div class="stat-note">Across all departments</div></article>
+        <article class="card stat"><div class="stat-top"><span>Present this month</span><span class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12.5 9.5 17 19 7"/></svg></span></div><div class="stat-value" id="present-days">—</div><div class="stat-note">Attendance days recorded</div></article>
+        <article class="card stat"><div class="stat-top"><span>Late arrivals</span><span class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div><div class="stat-value" id="late-count">—</div><div class="stat-note">Records with late minutes</div></article>
+        <article class="card stat"><div class="stat-top"><span>Leave days</span><span class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h10v4a5 5 0 0 1-10 0V3ZM12 12v9M8 21h8M7 5H4v2a5 5 0 0 0 4 4M17 5h3v2a5 5 0 0 1-4 4"/></svg></span></div><div class="stat-value" id="leave-count">—</div><div class="stat-note">Taken by your team</div></article>
+      </section>
+      <div class="section-heading" id="attendance"><div><h2>Daily attendance</h2><p>Attendance records for the selected month</p></div><span class="quiet" id="record-count"></span></div>
+      <section class="middle-grid">
+        <article class="card attendance-card">
+          <div class="card-title"><h3>Recent records</h3><span class="quiet" id="table-month"></span></div>
+          <div class="filter-row"><input class="search" id="search" type="search" placeholder="Search employee or department" aria-label="Search attendance"><select class="select" id="status-filter" aria-label="Filter by attendance status"><option value="">All statuses</option><option>PRESENT</option><option>WFH</option><option>ON_DUTY</option><option>ABSENT</option><option>LEAVE</option></select></div>
+          <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Date</th><th>Status</th><th>Hours</th><th></th></tr></thead><tbody id="attendance-rows"></tbody></table></div>
+        </article>
+        <article class="card punch-card" id="team">
+          <div class="card-title"><h3>Quick punch</h3><span class="badge present">LIVE</span></div>
+          <p class="punch-intro">Record an employee's attendance in a couple of clicks. Times are recorded using the current time.</p>
+          <div><div class="clock" id="clock">--:--</div><div class="clock-sub" id="clock-sub">India Standard Time</div></div>
+          <div>
+            <div class="field"><label for="employee-picker">TEAM MEMBER</label><select id="employee-picker"><option value="">Loading employees…</option></select></div>
+            <div class="field"><label for="punch-status">ATTENDANCE TYPE</label><select id="punch-status"><option value="PRESENT">In office</option><option value="WFH">Working from home</option><option value="ON_DUTY">On duty</option></select></div>
+            <div class="button-row"><button class="button button-primary" id="punch-in">Punch in</button><button class="button button-outline" id="punch-out">Punch out</button></div>
+          </div>
+        </article>
+      </section>
+      <div class="section-heading" id="employees">
+        <div><h2>Employees</h2><p>Active team members and their scheduled shift times</p></div>
+        <button class="button button-primary" id="add-employee-button" type="button" hidden>+ Add employee</button>
+      </div>
+      <section class="card attendance-card">
+        <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Shift hours</th><th>Joined</th><th></th></tr></thead><tbody id="employee-rows"></tbody></table></div>
+      </section>
+      <div class="section-heading" id="analytics"><div><h2>Team insights</h2><p>Department performance and punctuality</p></div></div>
+      <section class="analytics-grid">
+        <article class="card analytics-card"><div class="card-title"><h3>Department attendance</h3><span class="quiet">Present days</span></div><div class="dept-list" id="department-list"><div class="empty">Loading department summary…</div></div></article>
+        <article class="card analytics-card"><div class="card-title"><h3>Late arrivals</h3><span class="quiet">This month</span></div><div id="leaderboard"><div class="empty">Loading leaderboard…</div></div></article>
+      </section>
+    </main>
+  </div>
+  <dialog id="admin-dialog">
+    <form id="admin-form">
+      <div class="dialog-head"><div><h3>Admin sign in</h3><div class="quiet" id="admin-message">Sign in to manage attendance and team records.</div></div><button class="close" type="button" id="close-admin" aria-label="Close">×</button></div>
+      <div class="field"><label for="admin-username">USERNAME</label><input id="admin-username" name="username" autocomplete="username" required maxlength="100"></div>
+      <div class="field"><label for="admin-password">PASSWORD</label><input id="admin-password" name="password" type="password" autocomplete="current-password" required maxlength="200"></div>
+      <div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-admin">Cancel</button><button class="button button-primary" id="admin-submit" type="submit">Sign in</button></div>
+    </form>
+  </dialog>
+  <dialog id="employee-dialog">
+    <form id="employee-form">
+      <div class="dialog-head"><div><h3>Add employee</h3><div class="quiet">Add their profile and daily shift schedule.</div></div><button class="close" type="button" id="close-employee" aria-label="Close">×</button></div>
+      <div class="form-grid">
+        <div class="field"><label for="new-emp-code">EMPLOYEE CODE</label><input id="new-emp-code" required pattern="EMP[0-9]{4,6}" maxlength="9" placeholder="EMP0007"></div>
+        <div class="field"><label for="new-emp-name">FULL NAME</label><input id="new-emp-name" required maxlength="100"></div>
+        <div class="field"><label for="new-emp-email">EMAIL</label><input id="new-emp-email" type="email" required maxlength="120"></div>
+        <div class="field"><label for="new-emp-department">DEPARTMENT</label><input id="new-emp-department" required maxlength="50"></div>
+        <div class="field"><label for="new-emp-start">SHIFT START (IST)</label><input id="new-emp-start" type="time" required value="09:30"></div>
+        <div class="field"><label for="new-emp-end">SHIFT END (IST)</label><input id="new-emp-end" type="time" required value="18:30"></div>
+        <div class="field"><label for="new-emp-joined">JOINED ON</label><input id="new-emp-joined" type="date" required></div>
+      </div>
+      <div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-employee">Cancel</button><button class="button button-primary" id="save-employee" type="submit">Add employee</button></div>
+    </form>
+  </dialog>
+  <dialog id="correction-dialog">
+    <form id="correction-form">
+      <div class="dialog-head"><div><h3>Correct attendance</h3><div class="quiet" id="correction-employee"></div></div><button class="close" type="button" id="close-dialog" aria-label="Close">×</button></div>
+      <div class="field"><label for="correction-status">STATUS</label><select id="correction-status"><option>PRESENT</option><option>WFH</option><option>ON_DUTY</option><option>ABSENT</option><option>LEAVE</option></select></div>
+      <div class="form-grid">
+        <div class="field"><label for="correction-in">PUNCH IN (OPTIONAL)</label><input id="correction-in" type="datetime-local"></div>
+        <div class="field"><label for="correction-out">PUNCH OUT (OPTIONAL)</label><input id="correction-out" type="datetime-local"></div>
+      </div>
+      <div class="field"><label for="correction-reason">REASON (AT LEAST 5 CHARACTERS)</label><input id="correction-reason" maxlength="200" minlength="5" required placeholder="e.g. Correcting missed punch"></div>
+      <div class="field"><label for="correction-by">CORRECTED BY</label><input id="correction-by" maxlength="50" required value="hr.admin"></div>
+      <div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-correction">Cancel</button><button class="button button-primary" type="submit">Save correction</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const state = { employees: [], attendance: [], departments: [], authenticated: false, adminConfigured: false };
+    const today = new Date();
+    const monthValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    $("#month-picker").value = monthValue;
+    $("#today-date").textContent = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }).format(today);
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+    const dateText = (value) => new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(new Date(`${value}T12:00:00`));
+    const initials = (name) => String(name || "?").split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+    const toast = (message) => {
+      const node = $("#toast");
+      node.textContent = message;
+      node.classList.add("show");
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => node.classList.remove("show"), 3200);
+    };
+    async function api(url, options) {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        const message = typeof detail.detail === "string"
+          ? detail.detail
+          : Array.isArray(detail.detail)
+            ? detail.detail.map((item) => item.msg).join("; ")
+            : `Request failed (${response.status})`;
+        throw new Error(message);
+      }
+      if (response.status === 204) return null;
+      return response.json();
+    }
+    function setConnection(connected) {
+      const text = connected ? "API connected" : "API unavailable";
+      $("#api-status").textContent = text;
+      $("#mobile-api-status").textContent = text;
+      $("#api-dot").style.background = connected ? "#46cc8b" : "#e87979";
+      if (!connected) toast("Can't reach the API. Check that the server is running.");
+    }
+    function setAdmin(authenticated, username = "") {
+      state.authenticated = authenticated;
+      $("#admin-button").textContent = authenticated ? `Sign out · ${username}` : "Admin sign in";
+      $("#admin-button").title = authenticated ? "Sign out of the admin session" : "Sign in for attendance management";
+      $("#punch-in").disabled = !authenticated;
+      $("#punch-out").disabled = !authenticated;
+      $("#add-employee-button").hidden = !authenticated;
+      document.querySelectorAll("[data-correct]").forEach((button) => { button.hidden = !authenticated; });
+      renderEmployees();
+    }
+    function currentMonth() { return $("#month-picker").value || monthValue; }
+    function monthDateRange(month) {
+      const [year, monthNumber] = month.split("-").map(Number);
+      const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+      return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, "0")}` };
+    }
+    async function loadEmployees() {
+      const data = await api("/employees?page=1&page_size=100");
+      state.employees = data.items;
+      $("#team-count").textContent = data.total;
+      $("#employee-picker").innerHTML = state.employees.map((employee) => `<option value="${escapeHtml(employee.emp_code)}">${escapeHtml(employee.name)} · ${escapeHtml(employee.emp_code)} (${escapeHtml(employee.shift_start)}–${escapeHtml(employee.shift_end)})</option>`).join("") || '<option value="">No employees found</option>';
+      renderEmployees();
+    }
+    function renderEmployees() {
+      $("#employee-rows").innerHTML = state.employees.length ? state.employees.map((employee) => `
+        <tr><td><div class="person"><span class="person-badge">${escapeHtml(initials(employee.name))}</span><span><span class="person-name">${escapeHtml(employee.name)}</span><span class="person-code">${escapeHtml(employee.emp_code)} · ${escapeHtml(employee.email)}</span></span></div></td>
+        <td>${escapeHtml(employee.department)}</td><td>${escapeHtml(employee.shift_start)} – ${escapeHtml(employee.shift_end)} <span class="person-code">IST</span></td>
+        <td>${escapeHtml(employee.joined_on)}</td><td><button class="link-button" data-remove-employee="${escapeHtml(employee.emp_code)}" ${state.authenticated ? "" : "hidden"}>Remove</button></td></tr>`).join("")
+        : '<tr><td colspan="5" class="empty">No active employees yet.</td></tr>';
+    }
+    async function loadDashboard() {
+      const range = monthDateRange(currentMonth());
+      const [records, departments, leaders] = await Promise.all([
+        api(`/attendance?date_from=${range.from}&date_to=${range.to}&page=1&page_size=100`),
+        api(`/analytics/departments/summary?month=${currentMonth()}`),
+        api(`/analytics/leaderboard/late?month=${currentMonth()}&limit=5`)
+      ]);
+      state.attendance = records.items;
+      state.departments = departments.items;
+      $("#table-month").textContent = new Date(`${currentMonth()}-02`).toLocaleDateString("en", { month: "long", year: "numeric" });
+      $("#record-count").textContent = `${records.total} ${records.total === 1 ? "record" : "records"}`;
+      $("#present-days").textContent = departments.items.reduce((sum, item) => sum + Number(item.present_days || 0), 0).toLocaleString("en", { maximumFractionDigits: 1 });
+      $("#late-count").textContent = departments.items.reduce((sum, item) => sum + Number(item.late_count || 0), 0);
+      $("#leave-count").textContent = departments.items.reduce((sum, item) => sum + Number(item.leave_count || 0), 0);
+      renderAttendance();
+      renderDepartments();
+      renderLeaders(leaders.items);
+    }
+    function renderAttendance() {
+      const query = $("#search").value.trim().toLowerCase();
+      const status = $("#status-filter").value;
+      const filtered = state.attendance.filter((record) => {
+        const employee = state.employees.find((item) => item.emp_code === record.emp_code);
+        const text = `${record.emp_code} ${employee?.name || ""} ${employee?.department || ""}`.toLowerCase();
+        return (!query || text.includes(query)) && (!status || record.status === status);
+      });
+      $("#attendance-rows").innerHTML = filtered.length ? filtered.slice(0, 25).map((record) => {
+        const employee = state.employees.find((item) => item.emp_code === record.emp_code) || { name: record.emp_code, department: "" };
+        const stateClass = record.punch_out === null && record.punch_in !== null ? "open" : record.status.toLowerCase();
+        const label = stateClass === "open" ? "IN PROGRESS" : record.status.replace("_", " ");
+        return `<tr>
+          <td><div class="person"><span class="person-badge">${escapeHtml(initials(employee.name))}</span><span><span class="person-name">${escapeHtml(employee.name)}</span><span class="person-code">${escapeHtml(employee.department)} · ${escapeHtml(record.emp_code)}${employee.shift_start ? ` · ${escapeHtml(employee.shift_start)}–${escapeHtml(employee.shift_end)}` : ""}</span></span></div></td>
+          <td>${escapeHtml(dateText(record.date))}</td><td><span class="badge ${escapeHtml(stateClass)}">${escapeHtml(label)}</span></td>
+          <td>${record.work_hours === null ? "—" : `${Number(record.work_hours).toFixed(2)}h`}</td><td><button class="link-button" data-correct="${escapeHtml(record.emp_code)}" data-date="${escapeHtml(record.date)}" ${state.authenticated ? "" : "hidden"}>Correct</button></td>
+        </tr>`;
+      }).join("") : '<tr><td colspan="5" class="empty">No attendance records match this view.</td></tr>';
+    }
+    function renderDepartments() {
+      const maximum = Math.max(1, ...state.departments.map((item) => Number(item.present_days || 0)));
+      $("#department-list").innerHTML = state.departments.length ? state.departments.map((item) => `
+        <div class="dept-line"><div class="dept-info"><span class="dept-name">${escapeHtml(item.department)}</span><span class="dept-meta">${Number(item.present_days || 0).toLocaleString("en", { maximumFractionDigits: 1 })} days · ${item.headcount} people</span></div>
+        <div class="track"><div class="bar" style="width:${Math.max(item.present_days ? 6 : 0, Number(item.present_days || 0) / maximum * 100)}%"></div></div></div>`).join("") : '<div class="empty">No department activity for this month.</div>';
+    }
+    function renderLeaders(items) {
+      $("#leaderboard").innerHTML = items.length ? items.map((item) => `
+        <div class="leader-row"><span class="rank">${item.rank}</span><span class="person-badge">${escapeHtml(initials(item.name))}</span>
+        <span class="leader-details"><span class="person-name">${escapeHtml(item.name)}</span><span class="person-code" style="display:block">${escapeHtml(item.department)}</span></span></div>`).join("") : '<div class="empty">No late arrivals this month. Nice work!</div>';
+    }
+    async function reload() {
+      try {
+        setConnection(true);
+        await loadDashboard();
+      } catch (error) {
+        setConnection(false);
+        toast(error.message);
+      }
+    }
+    async function punch(direction) {
+      const empCode = $("#employee-picker").value;
+      if (!empCode) return toast("Choose a team member first.");
+      const button = $(`#punch-${direction}`);
+      button.disabled = true;
+      try {
+        await api(`/attendance/punch-${direction}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_code: empCode, ...(direction === "in" ? { status: $("#punch-status").value } : {}) })
+        });
+        toast(`Punch ${direction} recorded successfully.`);
+        await reload();
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+    function openCorrection(empCode, day) {
+      const record = state.attendance.find((item) => item.emp_code === empCode && item.date === day);
+      if (!record) return;
+      const employee = state.employees.find((item) => item.emp_code === empCode);
+      $("#correction-employee").textContent = `${employee?.name || empCode} · ${day}`;
+      $("#correction-status").value = record.status;
+      $("#correction-in").value = localISTInput(record.punch_in);
+      $("#correction-out").value = localISTInput(record.punch_out);
+      $("#correction-reason").value = "";
+      $("#correction-dialog").dataset.empCode = empCode;
+      $("#correction-dialog").dataset.day = day;
+      updateCorrectionFields();
+      $("#correction-dialog").showModal();
+    }
+    function timestampInput(selector) {
+      const value = $(selector).value;
+      return value ? new Date(`${value}:00+05:30`).getTime() : null;
+    }
+    function localISTInput(epoch) {
+      if (!epoch) return "";
+      const value = new Date(epoch + 330 * 60 * 1000);
+      return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}-${String(value.getUTCDate()).padStart(2, "0")}T${String(value.getUTCHours()).padStart(2, "0")}:${String(value.getUTCMinutes()).padStart(2, "0")}`;
+    }
+    function updateCorrectionFields() {
+      const status = $("#correction-status").value;
+      const isPresence = ["PRESENT", "WFH", "ON_DUTY"].includes(status);
+      $("#correction-in").disabled = !isPresence;
+      $("#correction-out").disabled = !isPresence;
+    }
+    $("#attendance-rows").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-correct]");
+      if (button) openCorrection(button.dataset.correct, button.dataset.date);
+    });
+    $("#employee-rows").addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-remove-employee]");
+      if (!button || !state.authenticated) return;
+      const employee = state.employees.find((item) => item.emp_code === button.dataset.removeEmployee);
+      if (!employee || !confirm(`Remove ${employee.name} from active employees? Their attendance history will be kept.`)) return;
+      button.disabled = true;
+      try {
+        await api(`/employees/${encodeURIComponent(employee.emp_code)}`, { method: "DELETE" });
+        toast(`${employee.name} removed. Attendance history is preserved.`);
+        await loadEmployees();
+        await reload();
+      } catch (error) {
+        button.disabled = false;
+        toast(error.message);
+      }
+    });
+    $("#search").addEventListener("input", renderAttendance);
+    $("#status-filter").addEventListener("change", renderAttendance);
+    $("#month-picker").addEventListener("change", reload);
+    $("#punch-in").addEventListener("click", () => punch("in"));
+    $("#punch-out").addEventListener("click", () => punch("out"));
+    $("#add-employee-button").addEventListener("click", () => {
+      const localToday = new Date(Date.now() + 330 * 60 * 1000);
+      $("#new-emp-joined").value = `${localToday.getUTCFullYear()}-${String(localToday.getUTCMonth() + 1).padStart(2, "0")}-${String(localToday.getUTCDate()).padStart(2, "0")}`;
+      $("#employee-dialog").showModal();
+    });
+    $("#close-employee").addEventListener("click", () => $("#employee-dialog").close());
+    $("#cancel-employee").addEventListener("click", () => $("#employee-dialog").close());
+    $("#employee-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = $("#save-employee");
+      button.disabled = true;
+      try {
+        const employee = await api("/employees", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            emp_code: $("#new-emp-code").value.trim().toUpperCase(),
+            name: $("#new-emp-name").value.trim(),
+            email: $("#new-emp-email").value.trim(),
+            department: $("#new-emp-department").value.trim(),
+            shift_start: $("#new-emp-start").value,
+            shift_end: $("#new-emp-end").value,
+            joined_on: $("#new-emp-joined").value
+          })
+        });
+        $("#employee-dialog").close();
+        $("#employee-form").reset();
+        $("#new-emp-start").value = "09:30";
+        $("#new-emp-end").value = "18:30";
+        toast(`${employee.name} added with shift ${employee.shift_start}–${employee.shift_end}.`);
+        await loadEmployees();
+        await reload();
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+    $("#admin-button").addEventListener("click", async () => {
+      if (!state.authenticated) {
+        $("#admin-message").textContent = state.adminConfigured
+          ? "Sign in to manage attendance and team records."
+          : "Admin access is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET before starting the API.";
+        $("#admin-form").hidden = !state.adminConfigured;
+        $("#admin-dialog").showModal();
+        return;
+      }
+      try {
+        await api("/admin/logout", { method: "POST" });
+        setAdmin(false);
+        renderAttendance();
+        toast("You have signed out.");
+      } catch (error) {
+        toast(error.message);
+      }
+    });
+    $("#close-admin").addEventListener("click", () => $("#admin-dialog").close());
+    $("#cancel-admin").addEventListener("click", () => $("#admin-dialog").close());
+    $("#admin-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = $("#admin-submit");
+      button.disabled = true;
+      try {
+        const result = await api("/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: $("#admin-username").value, password: $("#admin-password").value })
+        });
+        $("#admin-password").value = "";
+        $("#admin-dialog").close();
+        setAdmin(true, result.username);
+        renderAttendance();
+        toast("Admin sign-in successful.");
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+    $("#close-dialog").addEventListener("click", () => $("#correction-dialog").close());
+    $("#cancel-correction").addEventListener("click", () => $("#correction-dialog").close());
+    $("#correction-status").addEventListener("change", updateCorrectionFields);
+    $("#correction-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const dialog = $("#correction-dialog");
+      const body = {
+        status: $("#correction-status").value,
+        reason: $("#correction-reason").value,
+        regularized_by: $("#correction-by").value
+      };
+      if (["PRESENT", "WFH", "ON_DUTY"].includes(body.status)) {
+        const punchIn = timestampInput("#correction-in");
+        const punchOut = timestampInput("#correction-out");
+        if (punchIn !== null) body.punch_in = punchIn;
+        if (punchOut !== null) body.punch_out = punchOut;
+      }
+      try {
+        await api(`/attendance/${encodeURIComponent(dialog.dataset.empCode)}/${dialog.dataset.day}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+        });
+        dialog.close();
+        toast("Correction saved to the audit history.");
+        await reload();
+      } catch (error) {
+        toast(error.message);
+      }
+    });
+    function updateClock() {
+      $("#weekday-date").textContent = new Intl.DateTimeFormat("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata" }).format(new Date());
+      $("#clock").textContent = new Intl.DateTimeFormat("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }).format(new Date());
+      $("#clock-sub").textContent = new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" }).format(new Date()) + " · India Standard Time";
+    }
+    updateClock();
+    setInterval(updateClock, 30000);
+    async function init() {
+      try {
+        await api("/health");
+        setConnection(true);
+        const session = await api("/admin/session");
+        state.adminConfigured = session.configured;
+        setAdmin(session.authenticated, session.authenticated ? "Admin" : "");
+        await loadEmployees();
+        const recent = await api("/attendance?page=1&page_size=1");
+        if (recent.items.length) {
+          const latestMonth = recent.items[0].date.slice(0, 7);
+          if (!state.attendance.length && today.getDate() > 0) {
+            $("#month-picker").value = monthValue;
+            const range = monthDateRange(monthValue);
+            const currentMonthRecords = await api(`/attendance?date_from=${range.from}&date_to=${range.to}&page=1&page_size=1`);
+            if (!currentMonthRecords.total) $("#month-picker").value = latestMonth;
+          }
+        }
+        await reload();
+        if (!session.authenticated) {
+          $("#admin-message").textContent = session.configured
+            ? "Sign in to manage attendance and team records."
+            : "Admin access is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET before starting the API.";
+          $("#admin-form").hidden = !session.configured;
+          $("#admin-dialog").showModal();
+        }
+      } catch (error) {
+        setConnection(false);
+        toast(error.message);
+      }
+    }
+    init();
+  </script>
+</body>
+</html>
