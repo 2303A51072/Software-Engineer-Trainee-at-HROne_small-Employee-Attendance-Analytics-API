@@ -303,6 +303,13 @@ class PunchOutIn(BaseModel):
         return self
 
 
+class LeaveIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    emp_code: str = Field(pattern=r"^EMP\d{4,6}$")
+    date: date
+
+
 class RegularizeIn(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -901,6 +908,34 @@ def list_attendance(
         "page": page,
         "page_size": page_size,
     }
+
+
+@app.post("/attendance/leave", status_code=201)
+def mark_leave(body: LeaveIn, request: Request):
+    require_admin(request)
+    employee = db.employees.find_one({"emp_code": body.emp_code, "left_on": {"$exists": False}})
+    if employee is None:
+        raise HTTPException(404, "active employee not found")
+    if body.date < date.fromisoformat(employee["joined_on"]):
+        raise HTTPException(422, "leave date cannot be before the employee's start date")
+
+    document = {
+        "emp_code": body.emp_code,
+        "date": body.date.isoformat(),
+        "status": "LEAVE",
+        "punch_in": None,
+        "punch_out": None,
+        "work_hours": None,
+        "late_minutes": 0,
+        "overtime_minutes": 0,
+        "half_day": False,
+        "history": [],
+    }
+    try:
+        db.attendance_logs.insert_one(document)
+    except DuplicateKeyError as exc:
+        raise HTTPException(409, "attendance already exists for this employee and date") from exc
+    return attendance_response(document)
 
 
 @app.patch("/attendance/{emp_code}/{date}")

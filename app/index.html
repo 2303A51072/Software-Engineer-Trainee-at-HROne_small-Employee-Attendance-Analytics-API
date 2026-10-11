@@ -60,8 +60,22 @@
     .section-heading { align-items: end; display: flex; justify-content: space-between; margin: 27px 0 14px; }
     .section-heading h2 { font-size: 16px; letter-spacing: -.02em; margin: 0; }
     .section-heading p { color: var(--muted); font-size: 12px; margin: 5px 0 0; }
+    .section-tools { align-items: center; display: flex; gap: 10px; }
+    #export-button { flex: 0 0 auto; font-size: 10px; min-height: 32px; padding: 0 10px; }
+    .employee-actions { align-items: center; display: flex; gap: 7px; }
+    #add-employee-button, #mark-leave-button { flex: 0 0 auto; font-size: 10px; min-height: 32px; padding: 0 10px; }
+    #add-employee-button[hidden], #mark-leave-button[hidden] { display: none; }
     .month-input { background: white; border: 1px solid var(--line); border-radius: 8px; color: #4b5767; font-size: 12px; padding: 8px 10px; }
     .stats { display: grid; gap: 15px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .today-summary { display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; }
+    .today-stat { align-items: center; display: flex; gap: 11px; min-width: 0; padding: 12px 14px; }
+    .today-marker { background: var(--green-soft); border-radius: 9px; flex: 0 0 9px; height: 9px; }
+    .today-stat.absent .today-marker { background: var(--red); }
+    .today-stat.leave .today-marker { background: var(--violet); }
+    .today-stat.unrecorded .today-marker { background: #a8b5b8; }
+    .today-stat-copy { min-width: 0; }
+    .today-label { color: var(--muted); font-size: 10px; }
+    .today-value { color: var(--ink); font-size: 18px; font-weight: 750; line-height: 1.2; margin-top: 2px; }
     .card { background: var(--surface); border: 1px solid #dfebea; border-radius: 15px; box-shadow: 0 5px 18px #163b400b; transition: box-shadow .18s, transform .18s; }
     .card:hover { box-shadow: 0 9px 25px #163b4018; }
     .stat { min-height: 128px; overflow: hidden; padding: 17px 18px; position: relative; }
@@ -79,7 +93,7 @@
     .stat-value { color: #173c43; font-size: 27px; font-weight: 750; letter-spacing: -.045em; margin-top: 12px; }
     .stat-note { color: var(--muted); font-size: 11px; margin-top: 3px; }
     .middle-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.65fr) minmax(290px, .95fr); }
-    .attendance-card, .punch-card, .analytics-card { padding: 19px; }
+    .attendance-card, .punch-card, .analytics-card { min-width: 0; padding: 19px; }
     .card-title { align-items: center; display: flex; justify-content: space-between; }
     .card-title h3 { font-size: 14px; letter-spacing: -.01em; margin: 0; }
     .quiet { color: var(--muted); font-size: 11px; }
@@ -87,7 +101,7 @@
     .search { background: #fbfbfe; border: 1px solid var(--line); border-radius: 9px; flex: 1; min-width: 80px; outline: none; padding: 8px 10px; }
     .search:focus, .field input:focus, .field select:focus { border-color: #6eafb0; box-shadow: 0 0 0 3px #187c871a; outline: none; }
     .select { background: #fbfbfe; border: 1px solid var(--line); border-radius: 9px; color: #4b5767; padding: 8px; }
-    .table-wrap { overflow-x: auto; }
+    .table-wrap { max-width: 100%; min-width: 0; overflow-x: auto; }
     table { border-collapse: collapse; min-width: 490px; text-align: left; width: 100%; }
     th { background: #f0f7f6; border-bottom: 1px solid var(--line); color: #698287; font-size: 10px; font-weight: 700; letter-spacing: .055em; padding: 11px 8px; text-transform: uppercase; }
     td { border-bottom: 1px solid #f0f2f5; color: #566273; font-size: 11px; padding: 12px 8px; white-space: nowrap; }
@@ -154,17 +168,22 @@
     .mobile-brand { display: none; }
     @media (max-width: 1080px) {
       .stats { grid-template-columns: repeat(2, 1fr); }
+      .today-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .middle-grid { grid-template-columns: 1fr; }
       .punch-card { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
       .punch-card .card-title, .punch-intro { grid-column: 1 / -1; }
       .analytics-grid { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 720px) {
-      .sidebar { bottom: auto; height: 60px; padding: 0 14px; position: sticky; width: 100%; z-index: 5; }
+      .sidebar { bottom: auto; height: auto; padding: 0 12px; position: sticky; top: 0; width: 100%; z-index: 5; }
       .sidebar > .brand { display: none; }
       .brand { padding: 0; }
-      .sidebar > .nav-label, .sidebar > .nav, .sidebar-bottom { display: none; }
-      .mobile-brand { align-items: center; display: flex; height: 60px; justify-content: space-between; }
+      .sidebar > .nav-label, .sidebar-bottom { display: none; }
+      .sidebar > .nav { display: flex; gap: 4px; overflow-x: auto; padding: 0 0 7px; scrollbar-width: none; }
+      .sidebar > .nav::-webkit-scrollbar { display: none; }
+      .nav a { flex: 0 0 auto; font-size: 11px; gap: 6px; padding: 8px 9px; }
+      .nav svg { height: 15px; width: 15px; }
+      .mobile-brand { align-items: center; display: flex; height: 49px; justify-content: space-between; }
       .mobile-brand .brand { font-size: 15px; }
       .mobile-brand .api-status { font-size: 10px; }
       main { margin-left: 0; padding: 22px 15px 35px; }
@@ -174,15 +193,27 @@
       .stats { gap: 10px; }
       .stat { min-height: 115px; padding: 13px; }
       .stat-value { font-size: 22px; }
-      .section-heading { align-items: start; gap: 10px; }
+      .section-heading { align-items: center; gap: 10px; }
+      .section-tools { flex-wrap: wrap; justify-content: end; }
+      .employee-actions { flex-wrap: wrap; justify-content: end; }
       .punch-card { display: block; }
       .analytics-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 520px) {
+      main { padding-left: 12px; padding-right: 12px; }
+      .attendance-card, .punch-card, .analytics-card { padding: 14px; }
+      .filter-row { align-items: stretch; flex-direction: column; }
+      .filter-row .select { width: 100%; }
+      .section-heading p { max-width: 34ch; }
+      .month-input { max-width: 145px; }
+      .leader-row { gap: 8px; }
     }
     @media (max-width: 380px) {
       .stats { grid-template-columns: 1fr 1fr; }
       .stat-top { align-items: start; }
       .stat-icon { height: 27px; width: 27px; }
       .form-grid { grid-template-columns: 1fr; }
+      .employee-actions { align-items: end; flex-direction: column; }
     }
   </style>
 </head>
@@ -218,7 +249,13 @@
         <article class="card stat"><div class="stat-top"><span>Late arrivals</span><span class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div><div class="stat-value" id="late-count">—</div><div class="stat-note">Records with late minutes</div></article>
         <article class="card stat"><div class="stat-top"><span>Leave days</span><span class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h10v4a5 5 0 0 1-10 0V3ZM12 12v9M8 21h8M7 5H4v2a5 5 0 0 0 4 4M17 5h3v2a5 5 0 0 1-4 4"/></svg></span></div><div class="stat-value" id="leave-count">—</div><div class="stat-note">Taken by your team</div></article>
       </section>
-      <div class="section-heading" id="attendance"><div><h2>Daily attendance</h2><p>Attendance records for the selected month</p></div><span class="quiet" id="record-count"></span></div>
+      <section class="today-summary" aria-label="Today's attendance summary">
+        <article class="card today-stat"><span class="today-marker"></span><div class="today-stat-copy"><div class="today-label">Present today</div><div class="today-value" id="today-present">—</div></div></article>
+        <article class="card today-stat absent"><span class="today-marker"></span><div class="today-stat-copy"><div class="today-label">Marked absent</div><div class="today-value" id="today-absent">—</div></div></article>
+        <article class="card today-stat leave"><span class="today-marker"></span><div class="today-stat-copy"><div class="today-label">On leave</div><div class="today-value" id="today-leave">—</div></div></article>
+        <article class="card today-stat unrecorded"><span class="today-marker"></span><div class="today-stat-copy"><div class="today-label">Not recorded</div><div class="today-value" id="today-unrecorded">—</div></div></article>
+      </section>
+      <div class="section-heading" id="attendance"><div><h2>Daily attendance</h2><p>Attendance records for the selected month</p></div><div class="section-tools"><span class="quiet" id="record-count"></span><button class="button button-outline" id="export-button" type="button">Export CSV</button></div></div>
       <section class="middle-grid">
         <article class="card attendance-card">
           <div class="card-title"><h3>Recent records</h3><span class="quiet" id="table-month"></span></div>
@@ -238,7 +275,10 @@
       </section>
       <div class="section-heading" id="employees">
         <div><h2>Employees</h2><p>Active team members and their scheduled shift times</p></div>
-        <button class="button button-primary" id="add-employee-button" type="button" hidden>+ Add employee</button>
+        <div class="employee-actions">
+          <button class="button button-outline" id="mark-leave-button" type="button" hidden>On leave</button>
+          <button class="button button-primary" id="add-employee-button" type="button" hidden>+ Add employee</button>
+        </div>
       </div>
       <section class="card attendance-card">
         <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Shift hours</th><th>Joined</th><th></th></tr></thead><tbody id="employee-rows"></tbody></table></div>
@@ -271,6 +311,14 @@
         <div class="field"><label for="new-emp-joined">JOINED ON</label><input id="new-emp-joined" type="date" required></div>
       </div>
       <div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-employee">Cancel</button><button class="button button-primary" id="save-employee" type="submit">Add employee</button></div>
+    </form>
+  </dialog>
+  <dialog id="leave-dialog">
+    <form id="leave-form">
+      <div class="dialog-head"><div><h3>Mark employee on leave</h3><div class="quiet">Add a leave record for one date.</div></div><button class="close" type="button" id="close-leave" aria-label="Close">×</button></div>
+      <div class="field"><label for="leave-employee">EMPLOYEE</label><select id="leave-employee" required></select></div>
+      <div class="field"><label for="leave-date">LEAVE DATE</label><input id="leave-date" type="date" required></div>
+      <div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-leave">Cancel</button><button class="button button-primary" id="save-leave" type="submit">Save leave</button></div>
     </form>
   </dialog>
   <dialog id="correction-dialog">
@@ -332,6 +380,7 @@
       $("#punch-in").disabled = !authenticated;
       $("#punch-out").disabled = !authenticated;
       $("#add-employee-button").hidden = !authenticated;
+      $("#mark-leave-button").hidden = !authenticated;
       document.querySelectorAll("[data-correct]").forEach((button) => { button.hidden = !authenticated; });
       renderEmployees();
     }
@@ -346,6 +395,7 @@
       state.employees = data.items;
       $("#team-count").textContent = data.total;
       $("#employee-picker").innerHTML = state.employees.map((employee) => `<option value="${escapeHtml(employee.emp_code)}">${escapeHtml(employee.name)} · ${escapeHtml(employee.emp_code)} (${escapeHtml(employee.shift_start)}–${escapeHtml(employee.shift_end)})</option>`).join("") || '<option value="">No employees found</option>';
+      $("#leave-employee").innerHTML = state.employees.map((employee) => `<option value="${escapeHtml(employee.emp_code)}">${escapeHtml(employee.name)} · ${escapeHtml(employee.emp_code)}</option>`).join("") || '<option value="">No employees found</option>';
       renderEmployees();
     }
     function renderEmployees() {
@@ -357,13 +407,26 @@
     }
     async function loadDashboard() {
       const range = monthDateRange(currentMonth());
-      const [records, departments, leaders] = await Promise.all([
+      const todayIST = new Date(Date.now() + 330 * 60 * 1000);
+      const todayText = `${todayIST.getUTCFullYear()}-${String(todayIST.getUTCMonth() + 1).padStart(2, "0")}-${String(todayIST.getUTCDate()).padStart(2, "0")}`;
+      const [records, departments, leaders, todayRecords] = await Promise.all([
         api(`/attendance?date_from=${range.from}&date_to=${range.to}&page=1&page_size=100`),
         api(`/analytics/departments/summary?month=${currentMonth()}`),
-        api(`/analytics/leaderboard/late?month=${currentMonth()}&limit=5`)
+        api(`/analytics/leaderboard/late?month=${currentMonth()}&limit=5`),
+        api(`/attendance?date_from=${todayText}&date_to=${todayText}&page=1&page_size=100`)
       ]);
       state.attendance = records.items;
       state.departments = departments.items;
+      const todayCounts = todayRecords.items.reduce((counts, record) => {
+        counts[record.status] = (counts[record.status] || 0) + 1;
+        return counts;
+      }, {});
+      const presentStatuses = ["PRESENT", "WFH", "ON_DUTY"];
+      const presentToday = presentStatuses.reduce((sum, status) => sum + Number(todayCounts[status] || 0), 0);
+      $("#today-present").textContent = presentToday;
+      $("#today-absent").textContent = Number(todayCounts.ABSENT || 0);
+      $("#today-leave").textContent = Number(todayCounts.LEAVE || 0);
+      $("#today-unrecorded").textContent = Math.max(0, state.employees.length - todayRecords.items.length);
       $("#table-month").textContent = new Date(`${currentMonth()}-02`).toLocaleDateString("en", { month: "long", year: "numeric" });
       $("#record-count").textContent = `${records.total} ${records.total === 1 ? "record" : "records"}`;
       $("#present-days").textContent = departments.items.reduce((sum, item) => sum + Number(item.present_days || 0), 0).toLocaleString("en", { maximumFractionDigits: 1 });
@@ -399,9 +462,83 @@
         <div class="track"><div class="bar" style="width:${Math.max(item.present_days ? 6 : 0, Number(item.present_days || 0) / maximum * 100)}%"></div></div></div>`).join("") : '<div class="empty">No department activity for this month.</div>';
     }
     function renderLeaders(items) {
+      const formatLateTime = (minutes) => {
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+        return hours ? `${hours}h ${remainingMinutes}m late` : `${minutes}m late`;
+      };
       $("#leaderboard").innerHTML = items.length ? items.map((item) => `
         <div class="leader-row"><span class="rank">${item.rank}</span><span class="person-badge">${escapeHtml(initials(item.name))}</span>
-        <span class="leader-details"><span class="person-name">${escapeHtml(item.name)}</span><span class="person-code" style="display:block">${escapeHtml(item.department)}</span></span></div>`).join("") : '<div class="empty">No late arrivals this month. Nice work!</div>';
+        <span class="leader-details"><span class="person-name">${escapeHtml(item.name)}</span><span class="person-code" style="display:block">${escapeHtml(item.department)} · ${formatLateTime(Number(item.total_late_minutes || 0))} across ${Number(item.late_count || 0)} ${Number(item.late_count) === 1 ? "arrival" : "arrivals"}</span></span></div>`).join("") : '<div class="empty">No late arrivals this month. Nice work!</div>';
+    }
+    function csvCell(value) {
+      let text = String(value ?? "");
+      if (/^[\t\r=+\-@]/.test(text)) text = `'${text}`;
+      return `"${text.replace(/"/g, '""')}"`;
+    }
+    function istTimestamp(epoch) {
+      return epoch === null || epoch === undefined
+        ? ""
+        : new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hourCycle: "h23"
+        }).format(new Date(epoch));
+    }
+    async function exportAttendance() {
+      const button = $("#export-button");
+      button.disabled = true;
+      try {
+        const range = monthDateRange(currentMonth());
+        const params = `date_from=${range.from}&date_to=${range.to}&page_size=100`;
+        const firstPage = await api(`/attendance?${params}&page=1`);
+        const records = [...firstPage.items];
+        for (let page = 2; records.length < firstPage.total; page += 1) {
+          const nextPage = await api(`/attendance?${params}&page=${page}`);
+          if (!nextPage.items.length) throw new Error("Could not retrieve every attendance record for export.");
+          records.push(...nextPage.items);
+        }
+        const employeesByCode = new Map(state.employees.map((employee) => [employee.emp_code, employee]));
+        const columns = [
+          "Employee code", "Employee name", "Department", "Date", "Status", "Punch in (IST)",
+          "Punch out (IST)", "Work hours", "Late minutes", "Overtime minutes", "Half day"
+        ];
+        const rows = records.map((record) => {
+          const employee = employeesByCode.get(record.emp_code);
+          return [
+            record.emp_code,
+            employee?.name || "",
+            employee?.department || "",
+            record.date,
+            record.status,
+            istTimestamp(record.punch_in),
+            istTimestamp(record.punch_out),
+            record.work_hours ?? "",
+            record.late_minutes ?? 0,
+            record.overtime_minutes ?? 0,
+            record.half_day ? "Yes" : "No"
+          ];
+        });
+        const csv = [columns, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n");
+        const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `attendance-${currentMonth()}.csv`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        toast(`Exported ${records.length} attendance ${records.length === 1 ? "record" : "records"}.`);
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        button.disabled = false;
+      }
     }
     async function reload() {
       try {
@@ -483,12 +620,44 @@
     $("#search").addEventListener("input", renderAttendance);
     $("#status-filter").addEventListener("change", renderAttendance);
     $("#month-picker").addEventListener("change", reload);
+    $("#export-button").addEventListener("click", exportAttendance);
     $("#punch-in").addEventListener("click", () => punch("in"));
     $("#punch-out").addEventListener("click", () => punch("out"));
     $("#add-employee-button").addEventListener("click", () => {
       const localToday = new Date(Date.now() + 330 * 60 * 1000);
       $("#new-emp-joined").value = `${localToday.getUTCFullYear()}-${String(localToday.getUTCMonth() + 1).padStart(2, "0")}-${String(localToday.getUTCDate()).padStart(2, "0")}`;
       $("#employee-dialog").showModal();
+    });
+    $("#mark-leave-button").addEventListener("click", () => {
+      if (!state.employees.length) {
+        toast("Add an employee before recording leave.");
+        return;
+      }
+      const localToday = new Date(Date.now() + 330 * 60 * 1000);
+      const todayIST = `${localToday.getUTCFullYear()}-${String(localToday.getUTCMonth() + 1).padStart(2, "0")}-${String(localToday.getUTCDate()).padStart(2, "0")}`;
+      $("#leave-date").value = currentMonth() === monthValue ? todayIST : `${currentMonth()}-01`;
+      $("#leave-dialog").showModal();
+    });
+    $("#close-leave").addEventListener("click", () => $("#leave-dialog").close());
+    $("#cancel-leave").addEventListener("click", () => $("#leave-dialog").close());
+    $("#leave-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = $("#save-leave");
+      button.disabled = true;
+      try {
+        const result = await api("/attendance/leave", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ emp_code: $("#leave-employee").value, date: $("#leave-date").value })
+        });
+        $("#leave-dialog").close();
+        toast(`${result.date} saved as leave for ${$("#leave-employee").selectedOptions[0].textContent.split(" · ")[0]}.`);
+        await reload();
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        button.disabled = false;
+      }
     });
     $("#close-employee").addEventListener("click", () => $("#employee-dialog").close());
     $("#cancel-employee").addEventListener("click", () => $("#employee-dialog").close());
