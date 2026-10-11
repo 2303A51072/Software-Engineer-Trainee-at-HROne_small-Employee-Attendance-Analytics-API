@@ -21,9 +21,9 @@ The responsive attendance dashboard is available at `http://localhost:8000/` aft
 today-at-a-glance breakdown, team attendance, department analytics, and late-arrival rankings with total time late.
 Unrecorded attendance is shown separately from employees explicitly marked absent. Export any selected month's attendance
 records to CSV, including local IST punch times and calculated durations; the export retrieves all pages for the month.
-Sign in as admin to use punch-in/out, correct records, and mark an employee on leave for a selected date. Employee
-creation and employee removal are also available to admins. Removed employees are archived from the active roster while
-their attendance records and correction history remain available. Shift schedules are shown on the roster and punch
-selector. Corrections are written to the audit history. Write endpoints return `401` when not signed in. Admin sessions
-are HTTP-only, same-site cookies that expire after eight hours. The interactive API documentation remains available at
-`http://localhost:8000/docs`.
+Employees can sign in with their employee code and a PIN set by an admin, then punch only for themselves. Admins can
+punch for any employee, correct records, mark leave, add employees, and archive employees from the active roster.
+Attendance history remains available after an employee is archived. Shift schedules are shown on the roster and punch
+selector. Corrections are written to the audit history. Write endpoints require the appropriate employee or admin
+session. Sessions use HTTP-only, same-site cookies that expire after eight hours. The interactive API documentation
+remains available at `http://localhost:8000/docs`.

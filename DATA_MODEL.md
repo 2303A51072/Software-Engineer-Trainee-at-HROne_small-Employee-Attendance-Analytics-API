@@ -39,6 +39,8 @@ One document per employee.
 | `shift_end` | string `"HH:MM"` | IST. If `shift_end` <= `shift_start`, the shift is overnight (see R1). |
 | `joined_on` | string `"YYYY-MM-DD"` | First day of employment (see R7, R9). |
 | `created_at` | BSON date | When the record was created. Set by the API when it creates an employee; never supplied by a client. |
+| `login_pin_salt` | string (optional dashboard extension) | Random per-employee salt for the dashboard PIN hash. Never returned by the API. |
+| `login_pin_hash` | string (optional dashboard extension) | PBKDF2-HMAC-SHA256 hash for employee dashboard sign-in. Never returned by the API. |
 
 Sample:
 ```json
@@ -86,6 +88,10 @@ At most **one document per (`emp_code`, `date`)**. `emp_code` points at `employe
 
 The dashboard's admin-only `POST /attendance/leave` extension creates `LEAVE` records. No endpoint creates `ABSENT`
 records. A weekday with **no document at all** is different from an `ABSENT` document; the day has simply not been recorded.
+
+The dashboard supports employee self-service sign-in with an employee code and PIN. Admins set the PIN when adding an
+employee or later from the roster. Only a salted PBKDF2 hash is stored. Employees can punch only for their own account;
+administrative actions remain admin-only. Public attendance and employee-list reads do not require sign-in.
 
 ### Stored derived values are authoritative
 

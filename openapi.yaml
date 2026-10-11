@@ -109,6 +109,58 @@ paths:
                 properties:
                   status: {type: string, enum: [ok]}
         '503': {$ref: '#/components/responses/Error'}
+  /employee/session:
+    get:
+      tags: [employees]
+      operationId: employeeSession
+      summary: Read the employee sign-in session
+      responses:
+        '200':
+          description: Session state, with employee identity only when signed in
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authenticated, employee]
+                properties:
+                  authenticated: {type: boolean}
+                  employee:
+                    type: object
+                    nullable: true
+                    required: [emp_code, name]
+                    properties:
+                      emp_code: {type: string}
+                      name: {type: string}
+  /employee/login:
+    post:
+      tags: [employees]
+      operationId: employeeLogin
+      summary: Sign in an employee with their code and PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EmployeeLogin'}
+      responses:
+        '200':
+          description: Employee signed in; an HTTP-only session cookie is set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authenticated: {type: boolean, enum: [true]}
+                  employee: {$ref: '#/components/schemas/EmployeeIdentity'}
+        '401': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /employee/logout:
+    post:
+      tags: [employees]
+      operationId: employeeLogout
+      summary: Sign out the employee
+      responses:
+        '200':
+          description: Employee session cookie cleared
   /employees:
     post:
       tags: [employees]
@@ -151,6 +203,24 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/EmployeePage'}
         '422': {$ref: '#/components/responses/ValidationError'}
+  /employees/{emp_code}/login-pin:
+    put:
+      tags: [employees, admin]
+      operationId: setEmployeeLoginPin
+      summary: Set an employee's sign-in PIN
+      description: Admin-only extension. The PIN is salted and hashed before storage.
+      parameters:
+        - {name: emp_code, in: path, required: true, schema: {type: string, pattern: '^EMP\d{4,6}$'}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EmployeePin'}
+      responses:
+        '204': {description: PIN updated}
+        '401': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/ValidationError'}
   /attendance/punch-in:
     post:
       tags: [attendance]
@@ -160,6 +230,7 @@ paths:
         Creates the day's record. `date` follows R1 and `late_minutes` follows R2; `punch_out` and `work_hours` start as
         `null`, `overtime_minutes` as 0, `half_day` as false, `history` as `[]`. If `punched_at` is omitted, use the
         current time. `status` defaults to `PRESENT`; only `PRESENT`, `WFH` and `ON_DUTY` are accepted here.
+        Punching is allowed for admins or for the employee whose valid employee session matches `emp_code`.
         **Concurrency:** if the same employee punches in twice for the same attendance date at the same moment,
         exactly one request gets 201 and the rest get 409. Do not rely on check-then-insert.
         Errors: 404 unknown employee; 409 already punched in for that date; 422 invalid body.
@@ -176,6 +247,7 @@ paths:
               schema: {$ref: '#/components/schemas/AttendanceRecord'}
         '404': {$ref: '#/components/responses/Error'}
         '409': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
         '422': {$ref: '#/components/responses/ValidationError'}
   /attendance/punch-out:
     post:
@@ -185,6 +257,7 @@ paths:
       description: |
         Closes the employee's most recent record whose `punch_in` is at or before `punched_at` (this must work across
         midnight for overnight shifts). Computes `work_hours` (R4), `overtime_minutes` (R3) and `half_day` (R5).
+        Punching is allowed for admins or for the employee whose valid employee session matches `emp_code`.
         Errors: 404 unknown employee, or no punch-in found; 409 that record is already punched out (two simultaneous
         punch-outs must yield exactly one 200); 422 if `punched_at` <= `punch_in` or more than 24 hours after it.
       requestBody:
@@ -200,6 +273,7 @@ paths:
               schema: {$ref: '#/components/schemas/AttendanceRecord'}
         '404': {$ref: '#/components/responses/Error'}
         '409': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
         '422': {$ref: '#/components/responses/ValidationError'}
   /attendance/leave:
     post:
@@ -505,6 +579,24 @@ components:
         shift_start: {type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', default: '09:30', description: "24-hour HH:MM, IST."}
         shift_end: {type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', default: '18:30', description: "24-hour HH:MM, IST. <= shift_start means an overnight shift."}
         joined_on: {type: string, format: date, description: "First day of employment, YYYY-MM-DD."}
+        login_pin: {type: string, minLength: 6, maxLength: 128, writeOnly: true, description: "Optional employee sign-in PIN/passphrase. Stored only as a salted hash."}
+    EmployeeLogin:
+      type: object
+      required: [emp_code, pin]
+      properties:
+        emp_code: {type: string, pattern: '^EMP\d{4,6}$'}
+        pin: {type: string, minLength: 6, maxLength: 128, writeOnly: true}
+    EmployeePin:
+      type: object
+      required: [pin]
+      properties:
+        pin: {type: string, minLength: 6, maxLength: 128, writeOnly: true}
+    EmployeeIdentity:
+      type: object
+      required: [emp_code, name]
+      properties:
+        emp_code: {type: string}
+        name: {type: string}
     Employee:
       type: object
       required: [emp_code, name, email, department, shift_start, shift_end, joined_on, created_at]
