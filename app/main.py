@@ -6,6 +6,7 @@ import hmac
 import json
 import os
 import re
+import secrets
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
@@ -39,6 +40,56 @@ db = client[os.getenv("MONGO_DB", "attendance_db")]
 app = FastAPI(title="Employee Attendance & Analytics API", version="2.0.0")
 ADMIN_COOKIE = "attendance_admin"
 ADMIN_SESSION_SECONDS = 8 * 60 * 60
+EMPLOYEE_COOKIE = "attendance_employee"
+
+
+class EmployeeLoginIn(BaseModel):
+    emp_code: str = Field(pattern=r"^EMP\d{4,6}$")
+    pin: str = Field(min_length=6, max_length=128)
+
+
+class EmployeePinIn(BaseModel):
+    pin: str = Field(min_length=6, max_length=128)
+
+
+def employee_pin_hash(pin: str, salt: str) -> str:
+    return hashlib.pbkdf2_hmac("sha256", pin.encode(), bytes.fromhex(salt), 310_000).hex()
+
+
+def employee_session_token(emp_code: str, expires: int, pin_hash: str, secret: str) -> str:
+    payload = base64.urlsafe_b64encode(f"{emp_code}|{expires}|{pin_hash}".encode()).decode().rstrip("=")
+    signature = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}.{signature}"
+
+
+def authenticated_employee(request: Request) -> Optional[dict]:
+    secret = os.getenv("ADMIN_SESSION_SECRET")
+    if not secret:
+        return None
+    token = request.cookies.get(EMPLOYEE_COOKIE, "")
+    try:
+        payload, signature = token.rsplit(".", 1)
+        expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            return None
+        decoded = base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)).decode()
+        emp_code, expires, pin_hash = decoded.rsplit("|", 2)
+        if int(expires) <= int(datetime.now(UTC).timestamp()):
+            return None
+    except (ValueError, UnicodeDecodeError):
+        return None
+    employee = db.employees.find_one({"emp_code": emp_code, "left_on": {"$exists": False}})
+    if employee is None or not hmac.compare_digest(employee.get("login_pin_hash", ""), pin_hash):
+        return None
+    return employee
+
+
+def require_punch_access(request: Request, emp_code: str) -> None:
+    if is_admin_authenticated(request):
+        return
+    employee = authenticated_employee(request)
+    if employee is None or employee["emp_code"] != emp_code:
+        raise HTTPException(401, "employee sign-in required to punch for this account")
 
 
 class AdminLoginIn(BaseModel):
@@ -258,6 +309,7 @@ class EmployeeIn(BaseModel):
     shift_start: str = Field(default="09:30", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     shift_end: str = Field(default="18:30", pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     joined_on: str
+    login_pin: Optional[str] = Field(default=None, min_length=6, max_length=128)
 
     @field_validator("joined_on")
     @classmethod
@@ -339,6 +391,49 @@ def employee_response(document: dict) -> dict:
         "joined_on": document["joined_on"],
         "created_at": epoch_ms(document["created_at"]),
     }
+
+
+@app.get("/employee/session")
+def employee_session(request: Request):
+    employee = authenticated_employee(request)
+    return {
+        "authenticated": employee is not None,
+        "employee": (
+            {"emp_code": employee["emp_code"], "name": employee["name"]}
+            if employee is not None
+            else None
+        ),
+    }
+
+
+@app.post("/employee/login")
+def employee_login(body: EmployeeLoginIn, request: Request, response: Response):
+    employee = db.employees.find_one({"emp_code": body.emp_code, "left_on": {"$exists": False}})
+    salt = employee.get("login_pin_salt") if employee is not None else None
+    stored_hash = employee.get("login_pin_hash") if employee is not None else None
+    supplied_hash = employee_pin_hash(body.pin, salt or "00" * 16)
+    if employee is None or not stored_hash or not hmac.compare_digest(supplied_hash, stored_hash):
+        raise HTTPException(401, "employee code or PIN is incorrect")
+    secret = os.getenv("ADMIN_SESSION_SECRET")
+    if not secret:
+        raise HTTPException(503, "employee login is not configured")
+    expires = int(datetime.now(UTC).timestamp()) + ADMIN_SESSION_SECONDS
+    response.set_cookie(
+        EMPLOYEE_COOKIE,
+        employee_session_token(body.emp_code, expires, stored_hash, secret),
+        max_age=ADMIN_SESSION_SECONDS,
+        httponly=True,
+        secure=request.url.scheme == "https",
+        samesite="strict",
+        path="/",
+    )
+    return {"authenticated": True, "employee": {"emp_code": employee["emp_code"], "name": employee["name"]}}
+
+
+@app.post("/employee/logout")
+def employee_logout(response: Response):
+    response.delete_cookie(EMPLOYEE_COOKIE, path="/", httponly=True, samesite="strict")
+    return {"authenticated": False, "employee": None}
 
 
 def attendance_response(document: dict) -> dict:
@@ -764,12 +859,30 @@ def health():
 def create_employee(body: EmployeeIn, request: Request):
     require_admin(request)
     document = body.model_dump()
+    login_pin = document.pop("login_pin")
+    if login_pin:
+        salt = secrets.token_hex(16)
+        document["login_pin_salt"] = salt
+        document["login_pin_hash"] = employee_pin_hash(login_pin, salt)
     document["created_at"] = truncate_datetime(datetime.now(UTC))
     try:
         db.employees.insert_one(document)
     except DuplicateKeyError as exc:
         raise HTTPException(409, "emp_code already exists") from exc
     return employee_response(document)
+
+
+@app.put("/employees/{emp_code}/login-pin", status_code=204)
+def set_employee_login_pin(emp_code: str, body: EmployeePinIn, request: Request):
+    require_admin(request)
+    salt = secrets.token_hex(16)
+    result = db.employees.update_one(
+        {"emp_code": emp_code, "left_on": {"$exists": False}},
+        {"$set": {"login_pin_salt": salt, "login_pin_hash": employee_pin_hash(body.pin, salt)}},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(404, "active employee not found")
+    return Response(status_code=204)
 
 
 @app.get("/employees")
@@ -810,7 +923,7 @@ def archive_employee(emp_code: str, request: Request):
 
 @app.post("/attendance/punch-in", status_code=201)
 def punch_in(body: PunchInIn, request: Request):
-    require_admin(request)
+    require_punch_access(request, body.emp_code)
     employee = db.employees.find_one({"emp_code": body.emp_code, "left_on": {"$exists": False}})
     if employee is None:
         raise HTTPException(404, "employee not found")
@@ -837,7 +950,7 @@ def punch_in(body: PunchInIn, request: Request):
 
 @app.post("/attendance/punch-out")
 def punch_out(body: PunchOutIn, request: Request):
-    require_admin(request)
+    require_punch_access(request, body.emp_code)
     employee = db.employees.find_one({"emp_code": body.emp_code})
     if employee is None:
         raise HTTPException(404, "employee not found")

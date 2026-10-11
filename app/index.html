@@ -52,10 +52,11 @@
     .topbar { align-items: center; display: flex; justify-content: space-between; margin-bottom: 30px; }
     .eyebrow { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
     h1 { font-size: 25px; letter-spacing: -.04em; margin: 0; }
-    .top-right { align-items: center; display: flex; gap: 12px; }
+    .top-right { align-items: center; display: flex; gap: 8px; }
     .date-chip, .avatar { align-items: center; background: white; border: 1px solid var(--line); border-radius: 10px; display: flex; gap: 9px; padding: 9px 12px; }
     .date-chip { color: #566273; font-size: 12px; }
     .admin-button { background: linear-gradient(135deg, #177d83, #146473); border: 0; border-radius: 9px; box-shadow: 0 4px 12px #167d802b; color: white; font-size: 11px; font-weight: 650; min-height: 36px; padding: 0 14px; }
+    .employee-login-button { background: white; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); font-size: 11px; font-weight: 650; min-height: 36px; padding: 0 12px; }
     .admin-button:hover { box-shadow: 0 6px 16px #167d8042; filter: brightness(1.05); }
     .section-heading { align-items: end; display: flex; justify-content: space-between; margin: 27px 0 14px; }
     .section-heading h2 { font-size: 16px; letter-spacing: -.02em; margin: 0; }
@@ -201,6 +202,8 @@
     }
     @media (max-width: 520px) {
       main { padding-left: 12px; padding-right: 12px; }
+      .topbar { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .top-right { align-self: stretch; justify-content: flex-end; }
       .attendance-card, .punch-card, .analytics-card { padding: 14px; }
       .filter-row { align-items: stretch; flex-direction: column; }
       .filter-row .select { width: 100%; }
@@ -237,7 +240,7 @@
     <main>
       <header class="topbar" id="overview">
         <div><div class="eyebrow" id="weekday-date"></div><h1>Attendance overview</h1></div>
-        <div class="top-right"><div class="date-chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span id="today-date"></span></div><button class="admin-button" id="admin-button" type="button">Admin sign in</button></div>
+        <div class="top-right"><div class="date-chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span id="today-date"></span></div><button class="employee-login-button" id="employee-button" type="button">Employee sign in</button><button class="admin-button" id="admin-button" type="button">Admin sign in</button></div>
       </header>
       <div class="section-heading">
         <div><h2>Your team at a glance</h2><p>Live attendance and workforce insights</p></div>
@@ -264,7 +267,7 @@
         </article>
         <article class="card punch-card" id="team">
           <div class="card-title"><h3>Quick punch</h3><span class="badge present">LIVE</span></div>
-          <p class="punch-intro">Record an employee's attendance in a couple of clicks. Times are recorded using the current time.</p>
+          <p class="punch-intro" id="punch-intro">Sign in as an employee to record your attendance, or as admin to record punches for the team.</p>
           <div><div class="clock" id="clock">--:--</div><div class="clock-sub" id="clock-sub">India Standard Time</div></div>
           <div>
             <div class="field"><label for="employee-picker">TEAM MEMBER</label><select id="employee-picker"><option value="">Loading employees…</option></select></div>
@@ -281,7 +284,7 @@
         </div>
       </div>
       <section class="card attendance-card">
-        <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Shift hours</th><th>Joined</th><th></th></tr></thead><tbody id="employee-rows"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Shift hours</th><th>Joined</th><th id="employee-pin-actions-header" hidden></th></tr></thead><tbody id="employee-rows"></tbody></table></div>
       </section>
       <div class="section-heading" id="analytics"><div><h2>Team insights</h2><p>Department performance and punctuality</p></div></div>
       <section class="analytics-grid">
@@ -309,8 +312,24 @@
         <div class="field"><label for="new-emp-start">SHIFT START (IST)</label><input id="new-emp-start" type="time" required value="09:30"></div>
         <div class="field"><label for="new-emp-end">SHIFT END (IST)</label><input id="new-emp-end" type="time" required value="18:30"></div>
         <div class="field"><label for="new-emp-joined">JOINED ON</label><input id="new-emp-joined" type="date" required></div>
+        <div class="field"><label for="new-emp-pin">EMPLOYEE LOGIN PIN</label><input id="new-emp-pin" type="password" minlength="6" maxlength="128" autocomplete="new-password" required placeholder="At least 6 characters"></div>
       </div>
       <div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-employee">Cancel</button><button class="button button-primary" id="save-employee" type="submit">Add employee</button></div>
+    </form>
+  </dialog>
+  <dialog id="employee-login-dialog">
+    <form id="employee-login-form">
+      <div class="dialog-head"><div><h3>Employee sign in</h3><div class="quiet">Use the employee code and PIN provided by your admin.</div></div><button class="close" type="button" id="close-employee-login" aria-label="Close">×</button></div>
+      <div class="field"><label for="employee-login-code">EMPLOYEE CODE</label><input id="employee-login-code" required pattern="EMP[0-9]{4,6}" maxlength="9" autocomplete="username" placeholder="EMP0001"></div>
+      <div class="field"><label for="employee-login-pin">PIN</label><input id="employee-login-pin" type="password" required minlength="6" maxlength="128" autocomplete="current-password"></div>
+      <div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-employee-login">Cancel</button><button class="button button-primary" id="employee-login-submit" type="submit">Sign in</button></div>
+    </form>
+  </dialog>
+  <dialog id="employee-pin-dialog">
+    <form id="employee-pin-form">
+      <div class="dialog-head"><div><h3>Set employee login PIN</h3><div class="quiet" id="employee-pin-name"></div></div><button class="close" type="button" id="close-employee-pin" aria-label="Close">×</button></div>
+      <div class="field"><label for="employee-new-pin">NEW PIN OR PASSPHRASE</label><input id="employee-new-pin" type="password" required minlength="6" maxlength="128" autocomplete="new-password"></div>
+      <div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-employee-pin">Cancel</button><button class="button button-primary" type="submit">Save PIN</button></div>
     </form>
   </dialog>
   <dialog id="leave-dialog">
@@ -337,7 +356,7 @@
   <div class="toast" id="toast" role="status"></div>
   <script>
     const $ = (selector) => document.querySelector(selector);
-    const state = { employees: [], attendance: [], departments: [], authenticated: false, adminConfigured: false };
+    const state = { employees: [], attendance: [], departments: [], authenticated: false, employee: null, adminConfigured: false };
     const today = new Date();
     const monthValue = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
     $("#month-picker").value = monthValue;
@@ -377,12 +396,31 @@
       state.authenticated = authenticated;
       $("#admin-button").textContent = authenticated ? `Sign out · ${username}` : "Admin sign in";
       $("#admin-button").title = authenticated ? "Sign out of the admin session" : "Sign in for attendance management";
-      $("#punch-in").disabled = !authenticated;
-      $("#punch-out").disabled = !authenticated;
       $("#add-employee-button").hidden = !authenticated;
       $("#mark-leave-button").hidden = !authenticated;
       document.querySelectorAll("[data-correct]").forEach((button) => { button.hidden = !authenticated; });
+      $("#employee-pin-actions-header").hidden = !authenticated;
       renderEmployees();
+      updatePunchAccess();
+    }
+    function setEmployee(employee) {
+      state.employee = employee;
+      $("#employee-button").textContent = employee ? `Sign out · ${employee.name}` : "Employee sign in";
+      $("#employee-button").title = employee ? "Sign out of employee attendance" : "Sign in to punch your own attendance";
+      updatePunchAccess();
+    }
+    function updatePunchAccess() {
+      const canPunch = state.authenticated || Boolean(state.employee);
+      $("#punch-in").disabled = !canPunch;
+      $("#punch-out").disabled = !canPunch;
+      $("#employee-picker").disabled = Boolean(state.employee) && !state.authenticated;
+      if (state.employee && !state.authenticated) $("#employee-picker").value = state.employee.emp_code;
+      $("#punch-status").disabled = !canPunch;
+      $("#punch-intro").textContent = state.authenticated
+        ? "Admin mode: record a punch for any team member."
+        : state.employee
+          ? `Signed in as ${state.employee.name}. You can only record your own punches.`
+          : "Sign in as an employee to record your attendance, or as admin to record punches for the team.";
     }
     function currentMonth() { return $("#month-picker").value || monthValue; }
     function monthDateRange(month) {
@@ -397,12 +435,13 @@
       $("#employee-picker").innerHTML = state.employees.map((employee) => `<option value="${escapeHtml(employee.emp_code)}">${escapeHtml(employee.name)} · ${escapeHtml(employee.emp_code)} (${escapeHtml(employee.shift_start)}–${escapeHtml(employee.shift_end)})</option>`).join("") || '<option value="">No employees found</option>';
       $("#leave-employee").innerHTML = state.employees.map((employee) => `<option value="${escapeHtml(employee.emp_code)}">${escapeHtml(employee.name)} · ${escapeHtml(employee.emp_code)}</option>`).join("") || '<option value="">No employees found</option>';
       renderEmployees();
+      updatePunchAccess();
     }
     function renderEmployees() {
       $("#employee-rows").innerHTML = state.employees.length ? state.employees.map((employee) => `
         <tr><td><div class="person"><span class="person-badge">${escapeHtml(initials(employee.name))}</span><span><span class="person-name">${escapeHtml(employee.name)}</span><span class="person-code">${escapeHtml(employee.emp_code)} · ${escapeHtml(employee.email)}</span></span></div></td>
         <td>${escapeHtml(employee.department)}</td><td>${escapeHtml(employee.shift_start)} – ${escapeHtml(employee.shift_end)} <span class="person-code">IST</span></td>
-        <td>${escapeHtml(employee.joined_on)}</td><td><button class="link-button" data-remove-employee="${escapeHtml(employee.emp_code)}" ${state.authenticated ? "" : "hidden"}>Remove</button></td></tr>`).join("")
+        <td>${escapeHtml(employee.joined_on)}</td><td><button class="link-button" data-set-pin="${escapeHtml(employee.emp_code)}" ${state.authenticated ? "" : "hidden"}>Set PIN</button> <button class="link-button" data-remove-employee="${escapeHtml(employee.emp_code)}" ${state.authenticated ? "" : "hidden"}>Remove</button></td></tr>`).join("")
         : '<tr><td colspan="5" class="empty">No active employees yet.</td></tr>';
     }
     async function loadDashboard() {
@@ -550,7 +589,7 @@
       }
     }
     async function punch(direction) {
-      const empCode = $("#employee-picker").value;
+      const empCode = state.authenticated ? $("#employee-picker").value : state.employee?.emp_code;
       if (!empCode) return toast("Choose a team member first.");
       const button = $(`#punch-${direction}`);
       button.disabled = true;
@@ -602,6 +641,16 @@
       if (button) openCorrection(button.dataset.correct, button.dataset.date);
     });
     $("#employee-rows").addEventListener("click", async (event) => {
+      const pinButton = event.target.closest("[data-set-pin]");
+      if (pinButton && state.authenticated) {
+        const employee = state.employees.find((item) => item.emp_code === pinButton.dataset.setPin);
+        if (!employee) return;
+        $("#employee-pin-dialog").dataset.empCode = employee.emp_code;
+        $("#employee-pin-name").textContent = `${employee.name} · ${employee.emp_code}`;
+        $("#employee-new-pin").value = "";
+        $("#employee-pin-dialog").showModal();
+        return;
+      }
       const button = event.target.closest("[data-remove-employee]");
       if (!button || !state.authenticated) return;
       const employee = state.employees.find((item) => item.emp_code === button.dataset.removeEmployee);
@@ -676,7 +725,8 @@
             department: $("#new-emp-department").value.trim(),
             shift_start: $("#new-emp-start").value,
             shift_end: $("#new-emp-end").value,
-            joined_on: $("#new-emp-joined").value
+            joined_on: $("#new-emp-joined").value,
+            login_pin: $("#new-emp-pin").value
           })
         });
         $("#employee-dialog").close();
@@ -686,6 +736,67 @@
         toast(`${employee.name} added with shift ${employee.shift_start}–${employee.shift_end}.`);
         await loadEmployees();
         await reload();
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+    $("#close-employee-login").addEventListener("click", () => $("#employee-login-dialog").close());
+    $("#cancel-employee-login").addEventListener("click", () => $("#employee-login-dialog").close());
+    $("#employee-button").addEventListener("click", async () => {
+      if (!state.employee) {
+        $("#employee-login-form").reset();
+        $("#employee-login-dialog").showModal();
+        return;
+      }
+      try {
+        await api("/employee/logout", { method: "POST" });
+        setEmployee(null);
+        renderAttendance();
+        toast("You have signed out.");
+      } catch (error) {
+        toast(error.message);
+      }
+    });
+    $("#employee-login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = $("#employee-login-submit");
+      button.disabled = true;
+      try {
+        const result = await api("/employee/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            emp_code: $("#employee-login-code").value.trim().toUpperCase(),
+            pin: $("#employee-login-pin").value
+          })
+        });
+        $("#employee-login-pin").value = "";
+        $("#employee-login-dialog").close();
+        setEmployee(result.employee);
+        renderAttendance();
+        toast(`Signed in as ${result.employee.name}.`);
+      } catch (error) {
+        toast(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+    $("#close-employee-pin").addEventListener("click", () => $("#employee-pin-dialog").close());
+    $("#cancel-employee-pin").addEventListener("click", () => $("#employee-pin-dialog").close());
+    $("#employee-pin-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.submitter;
+      button.disabled = true;
+      try {
+        await api(`/employees/${encodeURIComponent($("#employee-pin-dialog").dataset.empCode)}/login-pin`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: $("#employee-new-pin").value })
+        });
+        $("#employee-pin-dialog").close();
+        toast("Employee sign-in PIN saved.");
       } catch (error) {
         toast(error.message);
       } finally {
@@ -775,6 +886,8 @@
         const session = await api("/admin/session");
         state.adminConfigured = session.configured;
         setAdmin(session.authenticated, session.authenticated ? "Admin" : "");
+        const employeeSession = await api("/employee/session");
+        setEmployee(employeeSession.authenticated ? employeeSession.employee : null);
         await loadEmployees();
         const recent = await api("/attendance?page=1&page_size=1");
         if (recent.items.length) {
@@ -787,13 +900,6 @@
           }
         }
         await reload();
-        if (!session.authenticated) {
-          $("#admin-message").textContent = session.configured
-            ? "Sign in to manage attendance and team records."
-            : "Admin access is not configured. Set ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_SESSION_SECRET before starting the API.";
-          $("#admin-form").hidden = !session.configured;
-          $("#admin-dialog").showModal();
-        }
       } catch (error) {
         setConnection(false);
         toast(error.message);
